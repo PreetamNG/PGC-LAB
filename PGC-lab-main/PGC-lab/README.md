@@ -1,188 +1,1079 @@
-﻿<div align="center">
+# 🚀 Matrix Multiplication — OpenMP & MPI Parallel Computing
 
-# ⚡ Parallel & Grid Computing (PGC) Lab
-### *High-Performance Parallel Matrix Computation & Speedup Benchmark Suite*
+This repository demonstrates the implementation and performance evaluation of **matrix multiplication** using three different computing approaches:
 
-[![Ubuntu 22.04 LTS](https://img.shields.io/badge/Ubuntu-22.04%20LTS-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](#)
-[![GCC 15.2.0](https://img.shields.io/badge/GCC-v15.2.0-A42E2B?style=for-the-badge&logo=gnu&logoColor=white)](#)
-[![OpenMP 5.0](https://img.shields.io/badge/OpenMP-MultiThreading-00599C?style=for-the-badge&logo=c&logoColor=white)](#)
-[![MPI](https://img.shields.io/badge/MPI-Distributed%20Cluster-8A2BE2?style=for-the-badge&logo=c&logoColor=white)](#)
-[![WSL2](https://img.shields.io/badge/WSL2-20%20vCPUs-0078D6?style=for-the-badge&logo=windows-terminal&logoColor=white)](#)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+* **Sequential CPU execution**
+* **OpenMP shared-memory parallel processing**
+* **MPI distributed-memory parallel processing**
 
-<br/>
+The experiment uses **4000×4000 matrices** and demonstrates how parallel computing techniques can reduce execution time for computationally intensive matrix multiplication.
 
-> **"A rigorous High-Performance Computing experimental study evaluating Sequential (SISD), Shared-Memory Multi-Threading (OpenMP), and Distributed-Memory Cluster (MPI) paradigms on large-scale dense matrix operations."**
+The project evaluates execution time, speedup, parallel efficiency, and correctness while demonstrating two major parallel programming models:
 
----
-
-</div>
-
-## 🌌 Laboratory Experiments Index
-
-Explore each module's **dedicated documentation, complete source code, mathematical formulation, and verification proofs**:
-
-| # | Experiment Module | Computing Paradigm | Hardware Target | Status | Dedicated Guide & Proofs |
-| :-: | :--- | :--- | :--- | :---: | :--- |
-| **01** | **Sequential Matrix Multiplication** | Single-Thread Serial $O(N^3)$ | 1 CPU Core | `COMPLETED ✅` | [👉 **Click to View Sequential.md & Proofs**](Sequential.md) |
-| **02** | **OpenMP Parallel Multiplication** | Shared-Memory Multi-Threading | 8 Threads / 20 Cores | `COMPLETED ✅` | [👉 **Click to View OpenMP.md & Proofs**](OpenMP.md) |
-| **03** | **MPI Distributed Multiplication** | Distributed-Memory Message Passing | 1 Master + 3 Workers | `VERIFIED 🌐` | [👉 **Click to View MPI.md & Cluster Proofs**](MPI.md) |
+> **OpenMP → Shared-memory parallelism**
+> **MPI → Distributed-memory/message-passing parallelism**
 
 ---
 
-## 📊 Experimental Benchmark Summary
+## 📊 Highlight Results
 
-| Implementation | Matrix Dimension ($N \times N$) | Execution Units | Compiler Optimization | Wall-Clock Time | Speedup ($S = \frac{T_1}{T_p}$) | Verification $C[0][0]$ |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Sequential Baseline** | $4000 \times 4000$ | 1 Core | `-O2` | **`581.154139 s`** *(~9.68 min)* | $1.00\times$ | `4000.00` ✅ |
-| **OpenMP Multi-Threaded** | $4000 \times 4000$ | 8 Threads | `-O2 -fopenmp` | **`349.400967 s`** *(~5.82 min)* | **`1.663x`** *(🔥 231.75s saved)* | `4000.00` ✅ |
-| **MPI Distributed** | $4000 \times 4000$ | 1 Master + 3 Workers | `-O2 mpicc` | Multi-Node VM Cluster | 0% Packet Loss Ping Verified | `4000.00` ✅ |
+### OpenMP
+
+> OpenMP reduced the execution time from **391.980118 seconds to 97.720623 seconds**, achieving a **4.011× speedup** using 8 CPU threads while producing the correct result `C[0][0] = 4000.00`.
+
+| Implementation |   Execution Time |    Speedup | Threads |
+| -------------- | ---------------: | ---------: | ------: |
+| Sequential     | **391.980118 s** | **1.000×** |       1 |
+| OpenMP         |  **97.720623 s** | **4.011×** |       8 |
+
+**Runtime Reduction:** 75.1%
+**Parallel Efficiency:** 50.1%
+
+### MPI
+
+The MPI implementation used **4 MPI processes/ranks**.
+
+| Implementation | Execution Time |    Speedup | Processes |
+| -------------- | -------------: | ---------: | --------: |
+| Sequential*    |  **244.120 s** | **1.000×** |         1 |
+| MPI            |   **92.980 s** |  **2.63×** |         4 |
+
+*The MPI benchmark was measured in an earlier experiment using its corresponding sequential baseline of 244.120 seconds. Therefore, the MPI and OpenMP timing results should be treated as separate benchmark runs rather than a direct head-to-head comparison.
+
+---
+
+# 📑 Table of Contents
+
+1. [Project Overview](#1-project-overview)
+2. [Objectives](#2-objectives)
+3. [Parallel Computing Models](#3-parallel-computing-models)
+4. [Architecture Overview](#4-architecture-overview)
+5. [Workload Description](#5-workload-description)
+6. [Repository Structure](#6-repository-structure)
+7. [Sequential Implementation](#7-sequential-implementation)
+8. [OpenMP Implementation](#8-openmp-implementation)
+9. [MPI Implementation](#9-mpi-implementation)
+10. [How OpenMP Works](#10-how-openmp-works)
+11. [How MPI Works](#11-how-mpi-works)
+12. [How to Compile and Run](#12-how-to-compile-and-run)
+13. [Experimental Results](#13-experimental-results)
+14. [Performance Analysis](#14-performance-analysis)
+15. [Performance Metrics](#15-performance-metrics)
+16. [OpenMP vs MPI](#16-openmp-vs-mpi)
+17. [Factors Affecting Performance](#17-factors-affecting-performance)
+18. [Key Concepts Demonstrated](#18-key-concepts-demonstrated)
+19. [Conclusion](#19-conclusion)
+20. [Technologies Used](#20-technologies-used)
+
+---
+
+# 1. Project Overview
+
+Matrix multiplication is a computationally intensive operation widely used in:
+
+* Machine Learning
+* Computer Graphics
+* Scientific Computing
+* Image Processing
+* Numerical Simulation
+* Data Analytics
+* Engineering Simulations
+
+For two matrices:
+
+$$
+C = A \times B
+$$
+
+each element of matrix `C` is calculated as:
+
+$$
+C[i][j] = \sum_{k=0}^{N-1} A[i][k] \times B[k][j]
+$$
+
+A traditional sequential implementation performs these operations one after another.
+
+This project explores how the same workload can be accelerated using:
+
+### Sequential
+
+A single CPU thread performs the complete computation.
+
+### OpenMP
+
+Multiple CPU threads execute different loop iterations concurrently using shared memory.
+
+### MPI
+
+Multiple independent processes/ranks communicate and distribute portions of the matrix computation using message passing.
+
+---
+
+# 2. Objectives
+
+### 🎯 Primary Objectives
+
+1. Implement matrix multiplication using a **sequential CPU approach**.
+2. Implement matrix multiplication using **OpenMP**.
+3. Implement matrix multiplication using **MPI**.
+4. Execute the OpenMP workload using **8 CPU threads**.
+5. Execute the MPI workload using **4 MPI ranks**.
+6. Compare execution times.
+7. Calculate speedup.
+8. Calculate parallel efficiency.
+9. Verify correctness of the parallel implementations.
+10. Understand the difference between **shared-memory and distributed-memory parallelism**.
+11. Understand communication operations such as `MPI_Scatter`, `MPI_Bcast`, and `MPI_Gather`.
+
+---
+
+# 3. Parallel Computing Models
+
+This project demonstrates two major parallel programming models.
+
+| Model      | Parallelism        | Communication           | Processing Units |
+| ---------- | ------------------ | ----------------------- | ---------------- |
+| Sequential | None               | Not required            | 1 CPU thread     |
+| OpenMP     | Shared-memory      | Shared variables/memory | 8 threads        |
+| MPI        | Distributed-memory | Message passing         | 4 MPI ranks      |
+
+### OpenMP
 
 ```text
-⏱️ Execution Time Comparison (Lower is Better):
-Sequential (1 Core)    [████████████████████████████████████████] 581.15s
-OpenMP (8 Threads)     [████████████████████████] 349.40s (⏱️ 231.75s saved!)
+Single Process
+      │
+      ├── Thread 1
+      ├── Thread 2
+      ├── Thread 3
+      ├── ...
+      └── Thread 8
+
+        Shared Memory
+```
+
+### MPI
+
+```text
+MPI Program
+     │
+     ├── Rank 0
+     ├── Rank 1
+     ├── Rank 2
+     └── Rank 3
+
+  Message Passing
+       ↕
+MPI Communication
 ```
 
 ---
 
-## 🔬 Theoretical Principles of Parallel Computing
+# 4. Architecture Overview
 
-### 1. Flynn's Classical Architectural Taxonomy
+```mermaid
+flowchart TD
 
-Modern computing architectures are classified based on the concurrency of instruction and data streams:
+    A["4000 × 4000 Matrix A"]
+    B["4000 × 4000 Matrix B"]
 
-```
-                          ┌────────────────────────────┐
-                          │   Flynn's Classification   │
-                          └─────────────┬──────────────┘
-                                        │
-             ┌──────────────────────────┴──────────────────────────┐
-             ▼                                                     ▼
-   Single Instruction (SI)                               Multiple Instruction (MI)
-   ┌───────────────────────┐                             ┌───────────────────────┐
-   │ SISD: Sequential CPU  │                             │ MISD: Fault-Tolerant  │
-   │ SIMD: Vector / AVX    │                             │ MIMD: OpenMP / MPI    │
-   └───────────────────────┘                             └───────────────────────┘
-```
+    A --> S["Sequential"]
+    B --> S
 
-- **SISD (Single Instruction, Single Data):** Represents standard sequential uniprocessor execution. Instructions are processed serially on one data stream at a time.
-- **MIMD (Shared-Memory SMP - OpenMP):** Multiple autonomous processors concurrently execute different instructions on different data streams while accessing a unified global memory address space.
-- **MIMD (Distributed-Memory - MPI):** Multiple independent computing nodes, each with isolated physical memory, coordinate through explicit message passing over a network fabric.
+    A --> O["OpenMP"]
+    B --> O
 
----
+    A --> M["MPI"]
+    B --> M
 
-### 2. Theoretical Scalability & Speedup Models
+    S --> S1["1 CPU Thread"]
 
-#### A. Amdahl's Law (Strong Scaling)
-Amdahl's law models the theoretical maximum speedup achievable when parallelizing a fixed-size workload across $p$ processing cores:
+    O --> O1["8 CPU Threads"]
 
-$$S_{\text{latency}}(p) = \frac{1}{(1 - f) + \frac{f}{p}}$$
+    M --> M1["4 MPI Ranks"]
 
-Where:
-- $f \in [0, 1]$ is the fraction of the algorithm that is strictly parallelizable.
-- $(1 - f)$ is the inherently serial fraction (e.g., initialization, thread synchronization, I/O).
-- As $p \to \infty$, the asymptotic speedup is strictly bounded by the serial bottleneck:
+    S1 --> R1["C[0][0] = 4000.00"]
+    O1 --> R2["C[0][0] = 4000.00"]
+    M1 --> R3["C[0][0] = 4000.00"]
 
-$$\lim_{p \to \infty} S(p) = \frac{1}{1 - f}$$
-
-#### B. Parallel Efficiency ($E$) & Overhead ($T_o$)
-Parallel Efficiency measures the fraction of time for which a processor is utilized productively:
-
-$$E = \frac{S(p)}{p} = \frac{T_1}{p \cdot T_p} \times 100\%$$
-
-The total parallel overhead $T_o$ encapsulates non-computational latency:
-
-$$T_o = p \cdot T_p - T_1 = T_{\text{synch}} + T_{\text{comm}} + T_{\text{fork-join}} + T_{\text{load-imbalance}}$$
-
-In our empirical OpenMP benchmark with $p=8$:
-$$\text{Speedup } S = \frac{581.154139\text{ s}}{349.400967\text{ s}} \approx 1.663\times, \quad \text{Efficiency } E = \frac{1.663}{8} \approx 20.79\%$$
-
----
-
-### 3. Memory Hierarchy & Microarchitectural Bottlenecks
-
-```
-+-------------------------------------------------------------+
-| CPU Registers (1 cycle latency, ~1 KB)                      |
-|   └── L1 Data Cache (4-5 cycles latency, ~32-64 KB per core)|
-|         └── L2 Cache (12-14 cycles latency, ~512 KB - 1 MB) |
-|               └── L3 Shared Cache (40-60 cycles, ~24-36 MB) |
-|                     └── Main Memory DRAM (150-200 cycles)   | ◄── "Memory Wall"
-+-------------------------------------------------------------+
+    R1 --> C["Performance Analysis"]
+    R2 --> C
+    R3 --> C
 ```
 
-#### A. The Von Neumann Memory Wall
-Dense matrix multiplication for $N = 4000$ double-precision floating-point numbers requires:
+---
 
-$$\text{Memory per Matrix} = 4000 \times 4000 \times 8\text{ bytes} = 128\text{ MB}$$
-$$\text{Total Working Set Memory} = 3 \times 128\text{ MB} = \mathbf{384\text{ MB}}$$
+# 5. Workload Description
 
-Because $384\text{ MB}$ far exceeds typical CPU L3 cache capacities ($24\text{ MB} - 36\text{ MB}$), CPU execution units stall waiting for data fetches from DRAM, known as **Memory Bandwidth Starvation**.
+The matrix multiplication workload uses:
 
-#### B. Spatial & Temporal Cache Locality Breakdown
-In row-major C storage, element $M[i][j]$ is adjacent in memory to $M[i][j+1]$, but element $M[k][j]$ is separated from $M[k+1][j]$ by $N \times 8 = 32,000\text{ bytes}$ (32 KB):
+| Parameter      | Value         |
+| -------------- | ------------- |
+| Matrix A       | `4000 × 4000` |
+| Matrix B       | `4000 × 4000` |
+| Matrix C       | `4000 × 4000` |
+| A elements     | `1.0`         |
+| B elements     | `1.0`         |
+| Data type      | `double`      |
+| Operation      | `C = A × B`   |
+| OpenMP threads | `8`           |
+| MPI ranks      | `4`           |
 
-- **Matrix $A[i][k]$:** Traversed horizontally along rows $\implies$ **High Spatial Locality** (Cache Hit).
-- **Matrix $B[k][j]$:** Traversed vertically down columns $\implies$ **Zero Spatial Locality** (Cache Miss on every step $k$).
-- Every column access of Matrix $B$ causes an L1/L2 cache line eviction, bottlenecking single-core and multi-threaded throughput.
+Since every element of both input matrices is `1.0`:
+
+$$
+C[i][j] =
+\sum_{k=0}^{3999}(1.0 \times 1.0)
+$$
+
+Therefore:
+
+$$
+C[i][j] = 4000
+$$
+
+### Verification
+
+```text
+C[0][0] = 4000.00
+```
+
+The expected result is therefore `4000.00` for every element of matrix `C`.
 
 ---
 
-### 4. Shared-Memory (OpenMP) vs. Distributed-Memory (MPI) Paradigms
+# 6. Repository Structure
 
-| Architectural Dimension | Shared-Memory (OpenMP) | Distributed-Memory (MPI) |
-| :--- | :--- | :--- |
-| **Memory Address Space** | Single, globally shared address space | Distinct, physically partitioned private memory |
-| **Communication Mechanism** | Direct memory load/store via CPU cache bus | Explicit network packet transfer (`MPI_Send`/`MPI_Recv`) |
-| **Data Synchronization** | Locks, Mutexes, Barriers, Atomic directives | Blocking/Non-blocking message synchronization |
-| **Hardware Boundary** | Single multi-core physical motherboard (SMP) | Multi-node networked clusters, blades, or VMs |
-| **Scalability Limit** | Limited by CPU socket memory bus bandwidth | Horizontally scalable to thousands of compute nodes |
-| **Programming Overhead** | Low (Incremental compiler `#pragma` directives) | Higher (Explicit data decomposition & scatter/gather) |
-
----
-
-## 📸 Experimental Execution Proofs
-
-### 1. Sequential Run Proof ($581.154\text{ s}$)
-[![Sequential Proof](assets/screenshots/sequential_run.png)](Sequential.md)
-
-### 2. OpenMP 8-Thread Run Proof ($349.400\text{ s}$)
-[![OpenMP Proof](assets/screenshots/openmp_run.png)](OpenMP.md)
-
-### 3. MPI 4-Node Cluster Connectivity (0% Packet Loss Ping)
-[![MPI Ping Proof](assets/screenshots/mpi_ping.png)](MPI.md)
-
----
-
-## 📂 Repository Directory Layout
-
-```plaintext
-PGC-lab/
-├── README.md                      # ⚡ Central Interactive Hub (You are here)
-├── Sequential.md                  # 🔷 Part A: Sequential Matrix Multiplication Guide & Proofs
-├── OpenMP.md                      # ⚡ Part B: OpenMP Shared-Memory Multi-Threading Guide & Proofs
-├── MPI.md                         # 🌐 Part C: MPI Distributed Cluster Multi-Node Guide & Proofs
+```text
+openmp-mpi-matrix-multiplication/
 │
-├── 01-Sequential/
-│   └── matrix_sequential.c        # Serial baseline implementation
-├── 02-OpenMP/
-│   └── matrix_openmp.c            # OpenMP multithreaded implementation
-├── 03-MPI/
-│   └── matrix_mpi.c               # MPI master-worker implementation
+├── baseline/
+│   └── src/
+│       └── matrix_sequential.c
 │
-├── assets/screenshots/            # High-resolution terminal run & cluster screenshots
-│   ├── sequential_run.png
-│   ├── openmp_run.png
-│   ├── mpi_ping.png
-│   ├── ssh_worker1.png
-│   ├── ssh_worker2.png
-│   ├── ssh_worker3.png
-│   ├── worker1_mpi.png
-│   ├── worker2_mpi.png
-│   ├── worker3_mpi.png
-│   └── wsl_setup.png
-├── Makefile                       # Unified build automation
-├── .gitignore
-└── LICENSE                        # MIT License
+├── optimized/
+│   └── src/
+│       └── matrix_openmp.c
+│
+├── mpi/
+│   └── src/
+│       └── matrix_mpi.c
+│
+├── advanced/
+│   └── ...
+│
+├── benchmarks/
+│   └── ...
+│
+├── screenshots/
+│   ├── sequential_result.png
+│   ├── openmp_result.png
+│   ├── openmp_htop.png
+│   └── mpi_result.png
+│
+├── Makefile
+├── README.md
+└── ...
 ```
+
+### Source Files
+
+| Implementation | File                               | Description                                  |
+| -------------- | ---------------------------------- | -------------------------------------------- |
+| Sequential     | `baseline/src/matrix_sequential.c` | Single-threaded matrix multiplication        |
+| OpenMP         | `optimized/src/matrix_openmp.c`    | Shared-memory parallel matrix multiplication |
+| MPI            | `mpi/src/matrix_mpi.c`             | Distributed-memory matrix multiplication     |
+| Advanced       | `advanced/`                        | Further optimization experiments             |
+| Benchmarks     | `benchmarks/`                      | Performance measurements and analysis        |
+
+---
+
+# 7. Sequential Implementation
+
+The sequential implementation uses the conventional **triple-nested loop**:
+
+```c
+for (i = 0; i < N; i++) {
+    for (j = 0; j < N; j++) {
+        for (k = 0; k < N; k++) {
+            C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+}
+```
+
+### Working
+
+For every element `C[i][j]`:
+
+1. Select a row from matrix `A`.
+2. Select a column from matrix `B`.
+3. Multiply corresponding elements.
+4. Add the products.
+5. Store the result in `C[i][j]`.
+
+### Complexity
+
+Matrix multiplication requires:
+
+$$
+O(N^3)
+$$
+
+operations.
+
+For `N = 4000`, this creates a very large computational workload, making the problem suitable for parallel computing.
+
+---
+
+# 8. OpenMP Implementation
+
+The OpenMP version parallelizes the outer loop.
+
+```c
+#pragma omp parallel for
+for (i = 0; i < N; i++) {
+    for (j = 0; j < N; j++) {
+        for (k = 0; k < N; k++) {
+            C[i][j] += A[i][k] * B[k][j];
+        }
+    }
+}
+```
+
+### Key OpenMP Directive
+
+```c
+#pragma omp parallel for
+```
+
+This tells OpenMP to:
+
+* Create a parallel region.
+* Divide loop iterations among threads.
+* Execute iterations concurrently.
+* Synchronize threads after the loop.
+
+### OpenMP Configuration
+
+```bash
+export OMP_NUM_THREADS=8
+```
+
+The experiment uses:
+
+```text
+8 CPU threads
+```
+
+---
+
+# 9. MPI Implementation
+
+The MPI implementation uses **4 MPI ranks/processes** to divide the matrix multiplication workload.
+
+Unlike OpenMP, MPI does not rely on multiple threads sharing the same memory space. Each MPI process has its own memory space and communicates with other processes using MPI communication functions.
+
+## MPI Workflow
+
+The implementation follows:
+
+```text
+MPI_Scatter(A)
+       ↓
+MPI_Bcast(B)
+       ↓
+Local Matrix Multiplication
+       ↓
+MPI_Gather(C)
+       ↓
+Final Matrix C
+```
+
+### Step 1 — MPI Initialization
+
+The MPI environment is initialized using:
+
+```c
+MPI_Init(...)
+```
+
+Each process obtains its:
+
+* Rank
+* Total number of processes
+
+using:
+
+```c
+MPI_Comm_rank(...)
+MPI_Comm_size(...)
+```
+
+---
+
+## Step 2 — Distribute Matrix A
+
+Matrix `A` is divided among the MPI ranks using:
+
+```c
+MPI_Scatter()
+```
+
+For a `4000 × 4000` matrix and 4 MPI ranks:
+
+```text
+4000 rows / 4 ranks
+        ↓
+1000 rows per rank
+```
+
+Therefore:
+
+```text
+Rank 0 → 1000 rows
+Rank 1 → 1000 rows
+Rank 2 → 1000 rows
+Rank 3 → 1000 rows
+```
+
+---
+
+## Step 3 — Broadcast Matrix B
+
+Every MPI rank requires the complete matrix `B`.
+
+Therefore, matrix `B` is distributed to all ranks using:
+
+```c
+MPI_Bcast()
+```
+
+Conceptually:
+
+```text
+              Matrix B
+                 │
+       ┌─────────┼─────────┐
+       ↓         ↓         ↓
+    Rank 0     Rank 1    Rank 2    Rank 3
+       │         │         │         │
+       └─────────┴─────────┴─────────┘
+```
+
+Each rank now has:
+
+```text
+Its portion of A
++
+Complete B
+```
+
+---
+
+## Step 4 — Local Computation
+
+Each rank independently calculates its portion of matrix `C`.
+
+For example:
+
+```text
+Rank 0 → C rows 0–999
+Rank 1 → C rows 1000–1999
+Rank 2 → C rows 2000–2999
+Rank 3 → C rows 3000–3999
+```
+
+Each rank performs:
+
+$$
+C_{local} = A_{local} \times B
+$$
+
+---
+
+## Step 5 — Gather Results
+
+After local computation, the partial results are combined using:
+
+```c
+MPI_Gather()
+```
+
+The root process collects the computed portions and reconstructs the complete matrix `C`.
+
+```text
+Rank 0 ──┐
+Rank 1 ──┤
+Rank 2 ──┼──→ MPI_Gather → Complete Matrix C
+Rank 3 ──┘
+```
+
+---
+
+# 10. How OpenMP Works
+
+OpenMP uses a **shared-memory model**.
+
+```text
+              Single Process
+                    │
+        ┌───────────┼───────────┐
+        ↓           ↓           ↓
+      Thread 1    Thread 2    Thread 3
+        ↓           ↓           ↓
+       Rows        Rows        Rows
+        │           │           │
+        └───────────┼───────────┘
+                    ↓
+              Shared Matrix C
+```
+
+All threads belong to the same process and can access shared memory.
+
+### Main Characteristics
+
+* Thread-based parallelism
+* Shared memory
+* Easy loop parallelization
+* Low communication complexity
+* Suitable for multicore systems
+
+---
+
+# 11. How MPI Works
+
+MPI uses a **distributed-memory/message-passing model**.
+
+```text
+                 MPI Program
+                     │
+       ┌─────────────┼─────────────┐
+       ↓             ↓             ↓
+    Rank 0         Rank 1        Rank 2       Rank 3
+       │             │             │            │
+       └─────────────┼─────────────┘
+                     │
+              Message Passing
+```
+
+Each process has its own address space.
+
+Processes communicate using MPI functions such as:
+
+```text
+MPI_Scatter()
+MPI_Bcast()
+MPI_Gather()
+```
+
+### Main Characteristics
+
+* Process-based parallelism
+* Distributed memory
+* Explicit communication
+* Scalable across multiple machines
+* Suitable for clusters and distributed systems
+
+---
+
+# 12. How to Compile and Run
+
+## Prerequisites
+
+The experiment uses:
+
+* Ubuntu / WSL
+* GCC
+* OpenMP
+* MPI
+* Make
+* Git & GitHub
+
+---
+
+## Compile Sequential Version
+
+Navigate to:
+
+```bash
+cd baseline/src
+```
+
+Compile:
+
+```bash
+gcc matrix_sequential.c -o matrix_sequential
+```
+
+Run:
+
+```bash
+./matrix_sequential
+```
+
+---
+
+## Compile OpenMP Version
+
+Navigate to:
+
+```bash
+cd optimized/src
+```
+
+Compile:
+
+```bash
+gcc -fopenmp matrix_openmp.c -o matrix_openmp
+```
+
+Run:
+
+```bash
+export OMP_NUM_THREADS=8
+./matrix_openmp
+```
+
+---
+
+## Compile MPI Version
+
+Navigate to:
+
+```bash
+cd mpi/src
+```
+
+Compile using the MPI compiler:
+
+```bash
+mpicc matrix_mpi.c -o matrix_mpi
+```
+
+Run using 4 MPI processes:
+
+```bash
+mpirun -np 4 ./matrix_mpi
+```
+
+or:
+
+```bash
+mpiexec -np 4 ./matrix_mpi
+```
+
+### MPI Process Configuration
+
+```text
+Number of MPI ranks = 4
+
+4000 rows / 4 ranks = 1000 rows per rank
+```
+
+---
+
+# 13. Experimental Results
+
+## 13.1 Sequential Result
+
+The sequential implementation was executed using a single CPU thread.
+
+```text
+Matrix Size: 4000 × 4000
+
+Execution Time: 391.980118 seconds
+
+C[0][0] = 4000.00
+```
+
+---
+
+## 13.2 OpenMP Result
+
+The OpenMP implementation was executed using 8 CPU threads.
+
+```text
+Matrix Size: 4000 × 4000
+Threads: 8
+
+Execution Time: 97.720623 seconds
+
+C[0][0] = 4000.00
+```
+
+### OpenMP Performance
+
+```text
+Sequential : 391.980118 s
+OpenMP     : 97.720623 s
+
+Speedup    : 4.011×
+Efficiency : 50.1%
+Reduction  : 75.1%
+```
+
+---
+
+## 13.3 MPI Result
+
+The MPI implementation was executed using 4 MPI ranks.
+
+```text
+Matrix Size: 4000 × 4000
+MPI Ranks: 4
+
+Execution Time: 92.980 seconds
+
+C[0][0] = 4000.00
+```
+
+The MPI experiment achieved:
+
+```text
+Speedup    : 2.63×
+```
+
+using its corresponding sequential benchmark of:
+
+```text
+244.120 seconds
+```
+
+---
+
+# 14. Performance Analysis
+
+## OpenMP Performance
+
+| Metric            |   Sequential |      OpenMP |
+| ----------------- | -----------: | ----------: |
+| Matrix Size       |    4000×4000 |   4000×4000 |
+| Threads           |            1 |           8 |
+| Execution Time    | 391.980118 s | 97.720623 s |
+| Speedup           |       1.000× |      4.011× |
+| Runtime Reduction |            — |       75.1% |
+| Efficiency        |            — |       50.1% |
+| `C[0][0]`         |      4000.00 |     4000.00 |
+
+---
+
+## MPI Performance
+
+| Metric         | Sequential* |       MPI |
+| -------------- | ----------: | --------: |
+| Matrix Size    |   4000×4000 | 4000×4000 |
+| Processes      |           1 |         4 |
+| Execution Time |   244.120 s |  92.980 s |
+| Speedup        |      1.000× |     2.63× |
+| `C[0][0]`      |     4000.00 |   4000.00 |
+
+*MPI benchmark baseline from the earlier MPI experiment.
+
+---
+
+## Execution Time Concept
+
+```mermaid
+xychart-beta
+    title "OpenMP Execution Time"
+    x-axis ["Sequential", "OpenMP"]
+    y-axis "Time (seconds)" 0 --> 400
+    bar [391.980118, 97.720623]
+```
+
+The OpenMP implementation substantially reduces the wall-clock execution time by distributing loop iterations among multiple CPU threads.
+
+---
+
+# 15. Performance Metrics
+
+## 15.1 Speedup
+
+Speedup measures how much faster a parallel implementation performs compared with its sequential baseline.
+
+$$
+Speedup =
+\frac{T_s}{T_p}
+$$
+
+where:
+
+* `Ts` = sequential execution time
+* `Tp` = parallel execution time
+
+### OpenMP
+
+$$
+Speedup =
+\frac{391.980118}{97.720623}
+$$
+
+$$
+\boxed{Speedup \approx 4.011\times}
+$$
+
+### MPI
+
+Using the MPI experiment's corresponding sequential baseline:
+
+$$
+Speedup =
+\frac{244.120}{92.980}
+$$
+
+$$
+\boxed{Speedup \approx 2.63\times}
+$$
+
+---
+
+# 16. OpenMP vs MPI
+
+OpenMP and MPI both provide parallelism, but they use fundamentally different approaches.
+
+| Feature                | OpenMP                      | MPI                         |
+| ---------------------- | --------------------------- | --------------------------- |
+| Parallel unit          | Thread                      | Process / Rank              |
+| Memory model           | Shared memory               | Distributed memory          |
+| Communication          | Shared variables            | Message passing             |
+| Main API               | OpenMP directives           | MPI functions               |
+| Example                | `#pragma omp parallel for`  | `MPI_Scatter()`             |
+| Execution              | Usually within one system   | Can span multiple systems   |
+| Memory                 | Shared address space        | Separate address spaces     |
+| Scalability            | Primarily multicore systems | Highly scalable clusters    |
+| Programming complexity | Relatively simpler          | More explicit communication |
+
+---
+
+## OpenMP Workflow
+
+```text
+Matrix A + Matrix B
+        │
+        ↓
+   Shared Memory
+        │
+ ┌──────┼──────┐
+ ↓      ↓      ↓
+T1     T2     T3 ... T8
+ │      │      │
+ └──────┼──────┘
+        ↓
+    Matrix C
+```
+
+---
+
+## MPI Workflow
+
+```text
+              Matrix A
+                 │
+          MPI_Scatter
+                 │
+     ┌───────────┼───────────┐
+     ↓           ↓           ↓
+   Rank 0      Rank 1      Rank 2      Rank 3
+ 1000 rows   1000 rows   1000 rows   1000 rows
+     │           │           │           │
+     └───────────┼───────────┘
+                 │
+          MPI_Bcast(B)
+                 │
+          Local Computation
+                 │
+          MPI_Gather(C)
+                 ↓
+            Matrix C
+```
+
+---
+
+# 17. Factors Affecting Performance
+
+The measured speedup does not necessarily reach the theoretical number of threads or processes.
+
+Several factors affect performance.
+
+### 1. Thread/Process Management Overhead
+
+Creating, scheduling, and managing parallel workers introduces overhead.
+
+### 2. Communication Overhead
+
+MPI requires explicit communication between processes.
+
+Operations such as:
+
+```text
+MPI_Scatter
+MPI_Bcast
+MPI_Gather
+```
+
+take time.
+
+### 3. Memory Access
+
+Matrix multiplication performs a large number of memory accesses.
+
+Performance can therefore depend on:
+
+* CPU cache
+* Memory bandwidth
+* Cache locality
+* Memory latency
+
+### 4. Synchronization
+
+Parallel workers may need synchronization before proceeding.
+
+### 5. Hardware Limitations
+
+Performance depends on:
+
+* Number of CPU cores
+* Number of logical processors
+* CPU architecture
+* Cache size
+* Memory bandwidth
+* Operating-system scheduling
+
+### 6. Non-Parallel Work
+
+According to Amdahl's Law, portions of the program that cannot be parallelized limit the maximum possible speedup.
+
+---
+
+# 18. Key Concepts Demonstrated
+
+This project demonstrates:
+
+* ✅ Sequential computation
+* ✅ Parallel computing
+* ✅ Shared-memory parallelism
+* ✅ Distributed-memory parallelism
+* ✅ OpenMP
+* ✅ MPI
+* ✅ CPU multithreading
+* ✅ MPI processes/ranks
+* ✅ Loop parallelization
+* ✅ Message passing
+* ✅ `MPI_Scatter`
+* ✅ `MPI_Bcast`
+* ✅ `MPI_Gather`
+* ✅ Thread scheduling
+* ✅ Matrix multiplication
+* ✅ Speedup calculation
+* ✅ Parallel efficiency
+* ✅ Performance benchmarking
+* ✅ Correctness verification
+
+---
+
+# 19. Conclusion
+
+This project demonstrates how parallel computing can accelerate computationally intensive matrix multiplication using both **OpenMP** and **MPI**.
+
+For the OpenMP experiment:
+
+```text
+Matrix Size : 4000 × 4000
+Threads     : 8
+
+Sequential : 391.980118 s
+OpenMP     : 97.720623 s
+
+Speedup    : 4.011×
+Reduction  : 75.1%
+Efficiency : 50.1%
+```
+
+For the MPI experiment:
+
+```text
+Matrix Size : 4000 × 4000
+MPI Ranks   : 4
+
+MPI Time   : 92.980 s
+Speedup    : 2.63×
+```
+
+The MPI implementation distributes the matrix rows among four ranks:
+
+```text
+4000 rows
+    ↓
+4 MPI ranks
+    ↓
+1000 rows/rank
+```
+
+The computation follows:
+
+```text
+MPI_Scatter(A)
+       ↓
+MPI_Bcast(B)
+       ↓
+Local Matrix Multiplication
+       ↓
+MPI_Gather(C)
+```
+
+Both parallel approaches maintain computational correctness, producing:
+
+```text
+C[0][0] = 4000.00
+```
+
+The project therefore demonstrates two fundamental approaches to parallel computing:
+
+> **OpenMP — shared-memory, thread-based parallelism**
+
+and
+
+> **MPI — distributed-memory, process-based message passing**
+
+---
+
+# 20. Technologies Used
+
+* **C**
+* **OpenMP**
+* **MPI**
+* **GCC 13.3.0**
+* **Open MPI / MPI**
+* **Ubuntu / WSL**
+* **Make**
+* **Git**
+* **GitHub**
+
+---
+
+## 👨‍💻 Project
+
+### Parallel Computing Laboratory — Matrix Multiplication
+
+```text
+                  Matrix Multiplication
+                           │
+              ┌────────────┼────────────┐
+              ↓            ↓            ↓
+          Sequential     OpenMP        MPI
+              │            │            │
+           1 Thread     8 Threads    4 Ranks
+              │            │            │
+              ↓            ↓            ↓
+          Baseline    Shared Memory  Message Passing
+              │            │            │
+              └────────────┼────────────┘
+                           ↓
+                  Performance Analysis
+                           │
+              ┌────────────┼────────────┐
+              ↓            ↓            ↓
+           Runtime       Speedup     Efficiency
+```
+
+⭐ **If you found this project useful, consider giving the repository a star!**
